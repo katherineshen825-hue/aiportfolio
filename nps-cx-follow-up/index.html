@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NPS and Product Review Based CX Follow Up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14171C;
+    --panel:#1B1F27;
+    --panel-raised:#20242E;
+    --border:#2A2F3A;
+    --text:#ECEAE3;
+    --text-dim:#8B93A1;
+    --amber:#E8A33D;
+    --amber-dim:#4A3B22;
+    --teal:#4FA98B;
+    --teal-dim:#1E3530;
+    --red:#D9695A;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    line-height:1.5;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:48px 24px 80px;}
+
+  /* Header / signature element */
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    border-bottom:1px solid var(--border);
+    padding-bottom:24px;
+    margin-bottom:32px;
+    gap:24px;
+    flex-wrap:wrap;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:24px;
+    font-weight:600;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .header-main{flex:1;min-width:280px;}
+  .subtitle{
+    font-size:13px;
+    color:var(--text-dim);
+    margin:10px 0 0;
+    max-width:560px;
+    line-height:1.55;
+  }
+  .board{
+    font-family:'IBM Plex Mono',monospace;
+    text-align:right;
+    min-width:160px;
+    flex-shrink:0;
+  }
+  .board .count{
+    font-size:32px;
+    font-weight:500;
+    color:var(--amber);
+    line-height:1;
+    transition:color 0.2s;
+  }
+  .board .label{
+    font-size:11px;
+    color:var(--text-dim);
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    margin-top:4px;
+  }
+
+  section{margin-bottom:28px;}
+  .section-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--amber);
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .section-label::before{
+    content:"";
+    width:6px;height:6px;
+    background:var(--amber);
+    border-radius:1px;
+  }
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:18px;
+  }
+
+  textarea, input[type=text], input[type=password]{
+    width:100%;
+    background:var(--panel-raised);
+    border:1px solid var(--border);
+    border-radius:4px;
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    padding:12px;
+    resize:vertical;
+  }
+  textarea:focus, input:focus{
+    outline:none;
+    border-color:var(--amber);
+  }
+  #criteria{min-height:90px;}
+  #reviews{min-height:140px;font-family:'IBM Plex Mono',monospace;font-size:13px;}
+
+  .hint{color:var(--text-dim);font-size:12.5px;margin-top:8px;}
+
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+
+  button{
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+    font-weight:600;
+    border:1px solid var(--border);
+    background:var(--panel-raised);
+    color:var(--text);
+    padding:10px 16px;
+    border-radius:4px;
+    cursor:pointer;
+    transition:border-color 0.15s, background 0.15s;
+  }
+  button:hover{border-color:var(--text-dim);}
+  button.primary{
+    background:var(--amber);
+    color:#20160A;
+    border-color:var(--amber);
+  }
+  button.primary:hover{background:#f0ae4d;}
+  button:disabled{opacity:0.45;cursor:not-allowed;}
+  button.ghost{background:transparent;color:var(--text-dim);border-color:transparent;text-decoration:underline;padding:10px 4px;}
+
+  .key-panel{
+    border:1px dashed var(--border);
+    border-radius:6px;
+    padding:14px 18px;
+    font-size:13px;
+    color:var(--text-dim);
+  }
+  .demo-panel{
+    border:1px solid var(--teal);
+    background:var(--teal-dim);
+  }
+  .demo-panel .hint{color:var(--text-dim);}
+  .key-panel.set{border-color:var(--teal);}
+  .key-row{display:flex;gap:10px;margin-top:10px;align-items:center;}
+  .key-row input{flex:1;}
+
+  /* Results */
+  #results{margin-top:8px;}
+  .item{
+    border:1px solid var(--border);
+    border-left:3px solid var(--border);
+    background:var(--panel);
+    border-radius:4px;
+    padding:14px 16px;
+    margin-bottom:10px;
+    animation:landIn 0.35s ease both;
+  }
+  .item.flag{border-left-color:var(--amber);}
+  .item.clear{border-left-color:var(--teal);opacity:0.75;}
+  @keyframes landIn{
+    from{opacity:0;transform:translateY(6px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+  .item-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}
+  .item-meta{
+    display:flex;
+    gap:16px;
+    flex-wrap:wrap;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--text);
+    margin-top:10px;
+  }
+  .item-meta b{
+    color:var(--text-dim);
+    font-weight:500;
+    margin-right:5px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    font-size:10.5px;
+  }
+  .stamp{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    font-weight:500;
+    letter-spacing:0.06em;
+    padding:3px 8px;
+    border-radius:3px;
+    white-space:nowrap;
+  }
+  .stamp.flag{background:var(--amber-dim);color:var(--amber);}
+  .stamp.clear{background:var(--teal-dim);color:var(--teal);}
+  .item-text{font-size:14px;margin:8px 0;color:var(--text);}
+  .item-reason{font-size:13px;color:var(--text-dim);border-top:1px solid var(--border);padding-top:8px;margin-top:8px;}
+  .item-reason b{color:var(--text);font-weight:600;}
+  .item-action{
+    font-size:13px;
+    color:var(--amber);
+    background:var(--amber-dim);
+    border-radius:4px;
+    padding:8px 10px;
+    margin-top:8px;
+  }
+  .item-action b{color:var(--amber);font-weight:600;}
+
+  .empty{color:var(--text-dim);font-size:13.5px;padding:24px 0;text-align:center;}
+  .status{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--text-dim);margin-top:10px;}
+  .status.err{color:var(--red);}
+
+  footer{margin-top:56px;border-top:1px solid var(--border);padding-top:18px;font-size:12.5px;color:var(--text-dim);}
+  footer a{color:var(--text-dim);}
+
+.results-group-spacer{height:28px;}
+
+</style>
+
+<style>
+  :root{
+    --ink:#14171C;
+    --panel:#FAFAF8;
+    --panel-raised:#FFFFFF;
+    --border:#E7E5DF;
+    --text:#14171C;
+    --text-dim:#5B6270;
+    --amber:#16233F;
+    --amber-dim:#EEF1F6;
+    --teal:#3B7A57;
+    --teal-dim:#EAF4EE;
+    --red:#C0463A;
+  }
+
+  body{
+    background:#FFFFFF;
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    line-height:1.55;
+  }
+
+  .wrap{
+    max-width:960px;
+    margin:0 auto;
+    padding:0 32px 80px;
+  }
+
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:24px;
+    flex-wrap:wrap;
+    border-bottom:1px solid var(--border);
+    padding:26px 0 36px;
+    margin-bottom:36px;
+  }
+
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:26px;
+    font-weight:700;
+    margin:0;
+    letter-spacing:-0.01em;
+    line-height:1.25;
+  }
+
+  .header-main{flex:1;min-width:280px;}
+
+  .subtitle{
+    font-size:14.5px;
+    color:var(--text-dim);
+    margin:14px 0 0;
+    max-width:620px;
+    line-height:1.6;
+  }
+
+  .board{
+    font-family:'Space Grotesk',sans-serif;
+    text-align:right;
+    min-width:150px;
+    flex-shrink:0;
+    background:#EEF1F6;
+    border-radius:8px;
+    padding:14px 18px;
+  }
+
+  .board .count{
+    font-size:26px;
+    font-weight:700;
+    color:var(--amber);
+    line-height:1;
+  }
+
+  .board .label{
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    color:var(--text-dim);
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    margin-top:4px;
+  }
+
+  section{margin-bottom:28px;}
+
+  .section-label{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:18px;
+    font-weight:600;
+    color:var(--ink);
+    text-transform:none;
+    letter-spacing:0;
+    margin-bottom:12px;
+    display:block;
+  }
+
+  .section-label::before{display:none;}
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:20px;
+  }
+
+  textarea, input[type=text], input[type=password]{
+    width:100%;
+    background:#FFFFFF;
+    border:1px solid var(--border);
+    border-radius:6px;
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    padding:12px;
+  }
+
+  textarea:focus, input:focus{
+    outline:none;
+    border-color:var(--amber);
+  }
+
+  #reviews{
+    min-height:140px;
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+  }
+
+  .hint{
+    color:var(--text-dim);
+    font-size:12.5px;
+    margin-top:8px;
+  }
+
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+
+  button{
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    border:1px solid var(--border);
+    background:#FFFFFF;
+    color:var(--ink);
+    padding:10px 16px;
+    border-radius:6px;
+    cursor:pointer;
+    transition:border-color .15s, background .15s, transform .15s;
+  }
+
+  button:hover{
+    border-color:#B8BCC4;
+    background:#FAFAF8;
+  }
+
+  button.primary{
+    background:var(--amber);
+    color:#FFFFFF;
+    border-color:var(--amber);
+  }
+
+  button.primary:hover{background:#2C3E63;}
+
+  button:disabled{opacity:.45;cursor:not-allowed;}
+  button.ghost{background:transparent;color:var(--text-dim);border-color:transparent;text-decoration:underline;padding:10px 4px;}
+
+  .key-panel{
+    border:1px dashed var(--border);
+    border-radius:8px;
+    padding:16px 18px;
+    font-size:13px;
+    color:var(--text-dim);
+    background:#FFFFFF;
+  }
+
+  .demo-panel{
+    border:1px solid var(--border);
+    background:#EEF1F6;
+    border-radius:8px;
+    padding:20px;
+  }
+
+  .demo-panel strong{color:var(--ink) !important;}
+  .demo-panel .hint{color:var(--text-dim);}
+
+  .key-panel.set{border-color:#3B7A57;}
+  .key-row{display:flex;gap:10px;margin-top:10px;align-items:center;}
+  .key-row input{flex:1;}
+
+  #results{margin-top:8px;}
+
+  .item{
+    border:1px solid var(--border);
+    border-left:3px solid var(--border);
+    background:#FFFFFF;
+    border-radius:8px;
+    padding:16px 18px;
+    margin:0 0 14px;
+    animation:landIn .35s ease both;
+  }
+
+  .item.flag{border-left-color:#16233F;}
+  .item.clear{border-left-color:#3B7A57;opacity:.82;}
+
+  .item-meta{
+    display:flex;
+    gap:16px;
+    flex-wrap:wrap;
+    font-family:'Inter',sans-serif;
+    font-size:12px;
+    color:var(--ink);
+    margin-top:10px;
+  }
+
+  .item-meta b{
+    color:var(--text-dim);
+    font-weight:600;
+    margin-right:5px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    font-size:10.5px;
+  }
+
+  .stamp{
+    font-family:'Inter',sans-serif;
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:.05em;
+    padding:4px 8px;
+    border-radius:4px;
+    white-space:nowrap;
+  }
+
+  .stamp.flag{background:#EEF1F6;color:#16233F;}
+  .stamp.clear{background:#EAF4EE;color:#3B7A57;}
+
+  .item-text{
+    font-size:14px;
+    margin:10px 0;
+    color:var(--ink);
+  }
+
+  .item-reason{
+    font-size:13px;
+    color:var(--text-dim);
+    border-top:1px solid var(--border);
+    padding-top:10px;
+    margin-top:10px;
+  }
+
+  .item-reason b{color:var(--ink);font-weight:600;}
+
+  .item-action{
+    font-size:13px;
+    color:#16233F;
+    background:#EEF1F6;
+    border-radius:6px;
+    padding:9px 11px;
+    margin-top:10px;
+  }
+
+  .item-action b{color:#16233F;font-weight:600;}
+
+  .status{
+    font-family:'Inter',sans-serif;
+    font-size:12.5px;
+    color:var(--text-dim);
+    margin-top:10px;
+  }
+
+  .status.err{color:var(--red);}
+
+  footer{
+    margin-top:56px;
+    border-top:1px solid var(--border);
+    padding-top:18px;
+    font-size:12.5px;
+    color:var(--text-dim);
+  }
+
+  footer a{color:var(--text-dim);}
+
+  @media(max-width:820px){
+    .wrap{padding:0 24px 64px;}
+  }
+
+  @media(max-width:560px){
+    .wrap{padding:0 20px 56px;}
+    .board{text-align:left;width:100%;}
+    .key-row{flex-direction:column;align-items:stretch;}
+  }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+  <nav style="display:flex;align-items:center;justify-content:space-between;padding:26px 0;border-bottom:1px solid var(--border);margin-bottom:40px;">
+    <div>
+      <a href="../index.html" style="text-decoration:none;color:var(--ink);font-size:14.5px;font-weight:500;">← Portfolio</a>
+    </div>
+    <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:16px;">Katherine Shen's AI Portfolio</div>
+    <div></div>
+  </nav>
+
+  <header>
+    <div class="header-main">
+      <h1>NPS and Product Review Based CX Follow Up</h1>
+      <p class="subtitle">Every morning, Claude will analyze all NPS survey responses and product reviews to surface any customer issues such as shipping issues, broken product, etc. and share customer and order information with CX reps with next steps to resolve these issues.</p>
+    </div>
+    <div class="board">
+      <div class="count" id="flagCount">—</div>
+      <div class="label">CX Follow Ups Required</div>
+    </div>
+  </header>
+
+  <section>
+    <div class="panel demo-panel">
+      <p class="hint" style="margin:0 0 12px;">Run a sample set of NPS responses and product reviews through the CX follow-up workflow.</p>
+      <button class="primary" id="runDemo">See a sample run</button>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">Flagging criteria</div>
+    <div class="panel">
+      
+      <textarea id="criteria">Flag a review only if it shows one of the following:
+- The customer received the wrong item (wrong product, wrong size, wrong order, mismatched item)
+- The customer says customer service did not respond, was slow to respond, or ignored them
+- The item arrived broken, damaged, defective, or otherwise not working
+- The item never arrived at its destination (lost or missing in transit)
+Do not flag anything else, including general praise, vague dissatisfaction, pricing complaints, shipping delays with no other issue, or feedback that doesn't clearly match one of the categories above.</textarea>
+      <p class="hint" style="margin:8px 0 0;">Enter the criteria that would cause a NPS survey response or product review to be flagged for additional CX review.</p>
+    </div>
+    
+  </section>
+
+  <section>
+    <div class="section-label">Issue resolution criteria</div>
+    <div class="panel">
+      <textarea id="resolution">If the customer received the wrong item, ship a replacement immediately with expedited shipping.
+If the item is damaged, send a replacement product.
+If the item never arrived at its destination, the CX rep should check the tracking number to confirm the item did not reach the destination, then ship another one.</textarea>
+      <p class="hint">Based on the flagging criteria, enter the next steps that CX reps must take for each scenario</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">Reviews to triage</div>
+    <div class="panel">
+      <textarea id="reviews" placeholder="Paste one review per line. Include an order number and/or customer email inline if you have them, e.g.:&#10;Order #48213 — customer@email.com — Wrong size sent, ordered a medium got a small."></textarea>
+      <div class="row">
+        </div>
+    </div>
+  </section>
+
+  <div class="row">
+    <span class="status" id="status"></span>
+  </div>
+
+  <section style="margin-top:28px;">
+    <div class="section-label">Requires CX Follow Up</div>
+    <div id="cxFollowUpResults"></div>
+
+    <div class="section-label" style="margin-top:30px;">CX Not Required</div>
+    <div id="cxNotRequiredResults"></div>
+  </section>
+
+  <footer><a href="https://github.com/katherineshen825-hue/aiportfolio" target="_blank">GitHub repo</a></footer>
+</div>
+
+<script>
+const MODEL = "claude-sonnet-5"; // swap to "claude-haiku-4-5-20251001" for a cheaper/faster run on large batches
+
+let apiKey = "";
+const sample = [
+  "Order #48213 — jmartinez88@gmail.com — NPS 2 — Ordered a medium and got sent a small, and it's the wrong color too. Not what I paid for.",
+  "Order #48260 — priya.k@outlook.com — NPS 9 — Great quality, fits perfectly, will definitely order again!",
+  "Order #48197 — d.chen91@yahoo.com — NPS 1 — Emailed support three times over the past week about my order and haven't heard back once. Ridiculous.",
+  "Order #48302 — sarah.owens@gmail.com — NPS 3 — Box arrived and the item inside was cracked down the middle. Clearly damaged before it even shipped.",
+  "Order #48155 — mike.t@icloud.com — NPS 6 — Shipping took longer than expected but the product itself is decent.",
+  "Order #48289 — lindsey.b@hotmail.com — NPS 10 — Exactly as described, packaging was nice too. Happy customer.",
+  "Order #48224 — robmillerjr@gmail.com — NPS 2 — This isn't even the product I ordered. Completely different item showed up in the box.",
+  "Order #48171 — amanda.f@gmail.com — NPS 4 — Price feels a little high for what you get, but nothing wrong with the product itself.",
+  "Order #48316 — chris.dao@outlook.com — NPS 1 — The charger stopped working after two days, doesn't turn on at all now.",
+  "Order #48208 — k.nguyen@gmail.com — NPS 8 — Solid product overall, minor nitpick that the instructions were a bit unclear."
+];
+const statusEl = document.getElementById('status');
+const cxFollowUpResultsEl = document.getElementById('cxFollowUpResults');
+const cxNotRequiredResultsEl = document.getElementById('cxNotRequiredResults');
+const flagCountEl = document.getElementById('flagCount');
+
+
+document.getElementById('runDemo').addEventListener('click', runDemo);
+
+// Precomputed verdicts matching the sample reviews above — lets anyone see
+// a real result instantly, with no API key required.
+const demoVerdicts = [
+  { index: 0, flag: true,  reason: "Customer received the wrong size and wrong color — a wrong item complaint.", order_number: "48213", customer_email: "jmartinez88@gmail.com", next_step: "Ship a replacement (correct size and color) with expedited shipping." },
+  { index: 1, flag: false, reason: "Positive feedback, no issue to escalate." },
+  { index: 2, flag: true,  reason: "Customer explicitly says support has not responded after three emails.", order_number: "48197", customer_email: "d.chen91@yahoo.com", next_step: "Escalate to a CX rep for manual follow-up — no automated resolution defined for non-response cases." },
+  { index: 3, flag: true,  reason: "Item arrived cracked — a broken item complaint.", order_number: "48302", customer_email: "sarah.owens@gmail.com", next_step: "Send a replacement product." },
+  { index: 4, flag: false, reason: "Shipping delay only, not one of the flagged categories." },
+  { index: 5, flag: false, reason: "Positive feedback, no issue to escalate." },
+  { index: 6, flag: true,  reason: "A completely different product than what was ordered — a wrong item complaint.", order_number: "48224", customer_email: "robmillerjr@gmail.com", next_step: "Ship a replacement (correct item) with expedited shipping." },
+  { index: 7, flag: false, reason: "Pricing complaint only, not one of the flagged categories." },
+  { index: 8, flag: true,  reason: "Item stopped working after two days — a broken item complaint.", order_number: "48316", customer_email: "chris.dao@outlook.com", next_step: "Send a replacement product." },
+  { index: 9, flag: false, reason: "Minor nitpick, not one of the flagged categories." }
+];
+
+async function runDemo() {
+  const demoBtn = document.getElementById('runDemo');
+  if (demoBtn) demoBtn.disabled = true;
+
+  document.getElementById('reviews').value = sample.join('\n');
+  cxFollowUpResultsEl.innerHTML = '';
+  cxNotRequiredResultsEl.innerHTML = '';
+  flagCountEl.textContent = '0';
+  statusEl.className = 'status';
+  statusEl.textContent = `Analyzing ${sample.length} sample reviews...`;
+
+  let flagged = 0;
+  const sorted = [...demoVerdicts].sort((a, b) => (b.flag - a.flag));
+
+  for (const v of sorted) {
+    if (v.flag) flagged++;
+    renderItem(
+      v,
+      sample[v.index],
+      v.flag ? cxFollowUpResultsEl : cxNotRequiredResultsEl
+    );
+    flagCountEl.textContent = flagged;
+    await new Promise(resolve => setTimeout(resolve, 220));
+  }
+
+  statusEl.textContent = `Complete — ${flagged} customer issues identified for CX follow-up.`;
+  if (demoBtn) demoBtn.disabled = false;
+}
+
+
+function renderItem(v, reviewText, targetEl) {
+  const item = document.createElement('div');
+  item.className = 'item ' + (v.flag ? 'flag' : 'clear');
+  const meta = (v.order_number || v.customer_email) ? `
+    <div class="item-meta">
+      ${v.order_number ? `<span><b>Order</b> ${escapeHtml(v.order_number)}</span>` : ''}
+      ${v.customer_email ? `<span><b>Email</b> ${escapeHtml(v.customer_email)}</span>` : ''}
+    </div>` : '';
+  const action = (v.flag && v.next_step) ? `
+    <div class="item-action"><b>Action:</b> ${escapeHtml(v.next_step)}</div>` : '';
+  item.innerHTML = `
+    ${v.flag ? meta : ''}
+    <div class="item-text">${escapeHtml(reviewText)}</div>
+    <div class="item-reason"><b>Why:</b> ${escapeHtml(v.reason || '')}</div>
+    ${action}
+  `;
+  targetEl.appendChild(item);
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+</script>
+</body>
+</html>
