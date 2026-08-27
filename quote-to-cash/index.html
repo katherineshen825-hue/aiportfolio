@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quote to Cash: Purchase Order Processing & Invoicing Automation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --navy:#16233F;
+    --navy-light:#2C3E63;
+    --navy-tint:#EEF1F6;
+    --ink:#14171C;
+    --text-dim:#5B6270;
+    --border:#E7E5DF;
+    --bg:#FFFFFF;
+    --panel:#FAFAF8;
+    --red:#C0463A;
+    --red-tint:#FBEEEC;
+    --amber:#B8791A;
+    --amber-tint:#FBF2E4;
+    --green:#3B7A57;
+    --green-tint:#EAF4EE;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;line-height:1.55;}
+  a{color:inherit;}
+  .wrap{max-width:960px;margin:0 auto;padding:0 32px 80px;}
+
+  nav{display:flex;align-items:center;justify-content:space-between;padding:26px 0;border-bottom:1px solid var(--border);margin-bottom:40px;}
+  .nav-left a{text-decoration:none;color:var(--ink);font-size:14.5px;font-weight:500;}
+  .nav-center{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:16px;}
+
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;margin-bottom:36px;}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;margin:0;letter-spacing:-0.01em;line-height:1.25;}
+  .header-main{flex:1;min-width:280px;}
+  .subtitle{font-size:14.5px;color:var(--text-dim);margin:14px 0 0;max-width:620px;line-height:1.6;}
+  .board{text-align:right;min-width:150px;flex-shrink:0;background:var(--navy-tint);border-radius:8px;padding:14px 18px;}
+  .board .count{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:var(--navy);line-height:1;}
+  .board .label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-top:4px;}
+
+  section{margin-bottom:28px;}
+  .section-label{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:600;margin-bottom:12px;}
+  .hint{color:var(--text-dim);font-size:12.5px;margin-top:8px;}
+  .hint.err{color:var(--red);}
+  .hint a{color:var(--navy);text-decoration:underline;}
+
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:20px;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center;}
+
+  button{font-family:'Inter',sans-serif;font-size:13.5px;font-weight:600;border:1px solid var(--border);background:#fff;color:var(--ink);padding:10px 16px;border-radius:6px;cursor:pointer;transition:border-color 0.15s,background 0.15s;}
+  button:hover{border-color:var(--navy);}
+  button.primary{background:var(--navy);color:#fff;border-color:var(--navy);text-transform:uppercase;letter-spacing:0.03em;font-size:13px;}
+  button.primary:hover{background:var(--navy-light);}
+  button.secondary{background:#fff;color:var(--navy);border-color:var(--navy);text-transform:uppercase;letter-spacing:0.03em;font-size:13px;}
+  button.secondary:hover{background:var(--navy-tint);}
+  button:disabled{opacity:0.45;cursor:not-allowed;}
+  button.ghost{background:transparent;color:var(--text-dim);border-color:transparent;text-decoration:underline;padding:10px 4px;}
+
+  /* Sample PO retailer cards */
+  .retailer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;}
+  .retailer-card{background:#fff;border:1px solid var(--border);border-left:3px solid var(--navy);border-radius:8px;padding:16px;}
+  .retailer-card h3{font-family:'Space Grotesk',sans-serif;font-size:14.5px;font-weight:600;margin:0 0 4px;}
+  .retailer-card p{font-size:12px;color:var(--text-dim);margin:0 0 12px;}
+  .retailer-card .row{margin-top:0;gap:8px;}
+  .retailer-card a.pdf-link{font-size:11.5px;color:var(--navy);text-decoration:underline;align-self:center;}
+
+  .key-panel{border:1px dashed var(--border);border-radius:8px;padding:16px 20px;font-size:13px;color:var(--text-dim);}
+  .key-panel.set{border-color:var(--navy);}
+  .key-row{display:flex;gap:10px;margin-top:10px;align-items:center;}
+  .key-row input{flex:1;background:#fff;border:1px solid var(--border);border-radius:6px;color:var(--ink);font-family:'Inter',sans-serif;font-size:13.5px;padding:10px 12px;}
+  .key-row input:focus{outline:none;border-color:var(--navy);}
+
+  details.raw-text{margin-top:10px;background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:10px 14px;}
+  details.raw-text summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--navy);}
+  details.raw-text pre{white-space:pre-wrap;font-size:11px;color:var(--text-dim);margin:10px 0 0;max-height:200px;overflow-y:auto;font-family:ui-monospace,Menlo,Consolas,monospace;}
+
+  /* Pipeline stage cards */
+  #pipeline{margin-top:8px;}
+  .stage-card{border:1px solid var(--border);border-left:3px solid var(--navy);background:#fff;border-radius:8px;padding:18px 20px;margin-bottom:14px;animation:landIn 0.35s ease both;}
+  @keyframes landIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .stage-label{font-size:10.5px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;}
+  .stage-card h3{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;margin:0 0 10px;}
+
+  .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;font-size:13px;margin-bottom:6px;}
+  .field-grid .f{padding:2px 0;}
+  .field-grid b{display:block;color:var(--text-dim);font-size:10.5px;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;}
+
+  table.mini{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:12px;}
+  table.mini th{text-align:left;color:var(--text-dim);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:0.03em;padding:6px 8px;border-bottom:1px solid var(--border);}
+  table.mini td{padding:6px 8px;border-bottom:1px solid var(--border);}
+  table.mini td.num{text-align:right;font-variant-numeric:tabular-nums;}
+
+  .confirm-box{background:var(--green-tint);border-radius:6px;padding:12px 14px;font-size:13px;color:var(--green);margin-top:4px;}
+  .confirm-box b{color:var(--green);}
+
+  .email-box{margin-top:10px;background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:12px 14px;font-size:13px;}
+  .email-box .subj{font-weight:600;margin-bottom:6px;}
+  .email-box .body-text{color:var(--text-dim);white-space:pre-wrap;}
+  .send-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;}
+  .send-row .hint{margin-top:0;}
+
+  .status{font-size:12.5px;color:var(--text-dim);margin-top:10px;}
+  .status.err{color:var(--red);}
+
+  /* AR dashboard */
+  .ar-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:8px;}
+  table.ar{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;}
+  table.ar th{text-align:left;background:var(--navy-tint);color:var(--navy);font-weight:600;padding:9px 12px;white-space:nowrap;font-size:11px;text-transform:uppercase;letter-spacing:0.03em;}
+  table.ar td{padding:9px 12px;border-top:1px solid var(--border);white-space:nowrap;}
+  table.ar td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .badge{display:inline-block;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:0.03em;}
+  .badge.paid{background:var(--green-tint);color:var(--green);}
+  .badge.outstanding{background:var(--navy-tint);color:var(--navy);}
+  .badge.overdue{background:var(--red-tint);color:var(--red);}
+  .badge.reminded{background:var(--amber-tint);color:var(--amber);}
+
+  footer{margin-top:56px;border-top:1px solid var(--border);padding-top:18px;padding-bottom:24px;font-size:12.5px;color:var(--text-dim);}
+  footer a{color:var(--text-dim);}
+.sample-run-cta{margin:18px 0 24px;padding:22px;border:1px solid #e5e7eb;border-radius:14px;background:#fafafa}.sample-run-cta p{margin:0 0 10px}.sample-run-cta .muted{color:#6b7280}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav>
+    <div class="nav-left"><a href="../index.html">← Portfolio</a></div>
+    <div class="nav-center">Katherine Shen's AI Portfolio</div>
+    <div></div>
+  </nav>
+
+  <header>
+    <div class="header-main">
+      <h1>Quote to Cash: Purchase Order Processing & Invoicing Automation</h1>
+      <p class="subtitle">Retailers send purchase orders in inconsistent formats (e.g., PDFs, form letters, plain-text emails). This tool reads any of them, extracts the order into structured data, creates the order in Shopify, generates the QuickBooks invoice once fulfilled, and tracks it through to payment in Ramp.</p>
+    </div>
+    <div class="board">
+      <div class="count" id="processedCount">0</div>
+      <div class="label">orders processed</div>
+    </div>
+  </header>
+
+  <section>
+    <div class="section-label"></div>
+    <div id="retailerGrid" class="sample-run-cta">
+  <p><strong></strong></p>
+  <p class="muted">Run a sample purchase order through the full order-to-cash workflow.</p>
+  <button class="primary" id="sampleRunBtn" type="button">See sample run →</button>
+</div>
+    <p class="hint"></p>
+  </section>
+
+  <section>
+    </div>
+  </section>
+
+  <div class="status" id="status"></div>
+
+  <section style="margin-top:8px;">
+    <div id="pipeline"></div>
+  </section>
+
+  <section>
+    <div class="section-label">Accounts receivable — outstanding POs</div>
+    <div class="ar-wrap">
+      <table class="ar" id="arTable"></table>
+    </div>
+    <p class="hint">Sample data across all retailers, for illustration.</p>
+  </section>
+
+  <footer>
+    
+    Source: <a href="https://github.com/katherineshen825-hue/aiportfolio" target="_blank">GitHub repo</a>
+  </footer>
+</div>
+
+<script>
+const MODEL = "claude-sonnet-5";
+let apiKey = "";
+const statusEl = document.getElementById('status');
+const pipelineEl = document.getElementById('pipeline');
+const processedCountEl = document.getElementById('processedCount');
+let processedCount = 0;
+function fmtMoney(n) {
+  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+function slugify(str) {
+  return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+// ---------------------------------------------------------------------------
+// Sample retailers + precomputed parse results (ground truth for the 4 sample
+// PDFs) so the demo runs end-to-end with no API key required.
+// ---------------------------------------------------------------------------
+const sampleRetailers = [
+  { key: 'trailhead', name: 'Trailhead Outfitters', note: 'Modern table-based PO' },
+  { key: 'campus', name: 'Campus Book Co.', note: 'Boxed traditional PO form' },
+  { key: 'journey', name: 'Journey Retail Group', note: 'Formal letterhead PO' },
+  { key: 'wayfarer', name: 'Wayfarer Mercantile', note: 'Informal plain-text order' }
+];
+
+const precomputedParses = {
+  trailhead: {
+    retailer: "Trailhead Outfitters",
+    po_number: "TH-88214",
+    ship_to: "Trailhead Outfitters DC, 4820 Alpine Way, Denver, CO 80202",
+    bill_to: "Trailhead Outfitters AP, 100 Corporate Dr, Ste 400, Denver, CO 80203",
+    billing_email: "ap@trailheadoutfitters.com",
+    ship_date: "2026-07-10",
+    requested_delivery_date: "2026-07-17",
+    payment_terms: "Net 60",
+    line_items: [
+      { sku: "TOTE-BLK-001", description: "Canvas Tote, Black", qty: 400, unit_price: 7.00 },
+      { sku: "CAP-NVY-022", description: "Structured Cap, Navy", qty: 250, unit_price: 5.00 },
+      { sku: "MUG-CER-014", description: "Ceramic Mug, 12oz", qty: 150, unit_price: 3.50 }
+    ]
+  },
+  campus: {
+    retailer: "Campus Book Co.",
+    po_number: "CBC-2026-0451",
+    ship_to: "Campus Book Co. Distribution Ctr, 1500 University Pkwy, Columbus, OH 43210",
+    bill_to: "Campus Book Co. Corporate AP, 200 Campus Blvd, Columbus, OH 43215",
+    billing_email: "payables@campusbookco.edu",
+    ship_date: "2026-07-05",
+    requested_delivery_date: "2026-07-12",
+    payment_terms: "Net 30",
+    line_items: [
+      { sku: "TEE-GRY-005", description: "Crew Tee, Heather Gray", qty: 600, unit_price: 9.25 },
+      { sku: "BAG-CANV-009", description: "Canvas Book Bag", qty: 300, unit_price: 6.75 },
+      { sku: "HAT-STR-011", description: "Straw Sun Hat", qty: 200, unit_price: 8.00 }
+    ]
+  },
+  journey: {
+    retailer: "Journey Retail Group",
+    po_number: "JRG-77302",
+    ship_to: "Journey Retail Group — Airport Distribution, 900 Terminal Rd, Atlanta, GA 30320",
+    bill_to: "Journey Retail Group — Finance Dept, 45 Concourse Ave, Atlanta, GA 30321",
+    billing_email: "invoices@journeyretailgroup.com",
+    ship_date: "2026-07-15",
+    requested_delivery_date: "2026-07-22",
+    payment_terms: "Net 45",
+    line_items: [
+      { sku: "SOCK-MLT-003", description: "Assorted Crew Socks", qty: 500, unit_price: 2.80 },
+      { sku: "SCARF-WL-018", description: "Wool Scarf", qty: 180, unit_price: 11.50 }
+    ]
+  },
+  wayfarer: {
+    retailer: "Wayfarer Mercantile",
+    po_number: "WM-1187",
+    ship_to: "Wayfarer Mercantile, 22 Harbor St, Portland, ME 04101",
+    bill_to: "Wayfarer Mercantile, 22 Harbor St, Portland, ME 04101",
+    billing_email: "billing@wayfarermercantile.com",
+    ship_date: "2026-07-08",
+    requested_delivery_date: "2026-07-14",
+    payment_terms: "Net 30",
+    line_items: [
+      { sku: "JKT-DEN-027", description: "Denim Jacket", qty: 80, unit_price: 28.00 },
+      { sku: "BEANIE-GRN-031", description: "Knit Beanie, Green", qty: 120, unit_price: 6.50 }
+    ]
+  }
+};
+
+const precomputedEmails = {
+  trailhead: "Hi Trailhead Outfitters AP team,\n\nAttached is invoice INV-TH88214 for PO TH-88214, now that the order has shipped. Total due: $4,575.00, payable under Net 60 terms.\n\nPlease let us know if you have any questions.\n\nBest,\nKatherine",
+  campus: "Hi Campus Book Co. Accounts Payable,\n\nAttached is invoice INV-CBC20260451 for PO CBC-2026-0451, now that the order has shipped. Total due: $9,175.00, payable under Net 30 terms.\n\nPlease reach out with any questions.\n\nBest,\nKatherine",
+  journey: "Hi Journey Retail Group Finance team,\n\nAttached is invoice INV-JRG77302 for PO JRG-77302, now that the order has shipped. Total due: $3,470.00, payable under Net 45 terms.\n\nLet me know if anything needs adjusting.\n\nBest,\nKatherine",
+  wayfarer: "Hi Wayfarer Mercantile team,\n\nAttached is invoice INV-WM1187 for order WM-1187, now that it has shipped. Total due: $3,020.00, payable under Net 30 terms.\n\nThanks so much for the order!\n\nBest,\nKatherine"
+};
+
+
+const sample = {
+  key: 'trailhead',
+  name: 'Trailhead Outfitters',
+  sampleText: `TRAILHEAD OUTFITTERS
+PURCHASE ORDER
+
+PO Number: TH-88214
+Order Date: June 28, 2026
+Requested Ship Date: July 10, 2026
+Requested Delivery: July 17, 2026
+Payment Terms: Net 60
+
+SHIP TO
+Trailhead Outfitters DC
+4820 Alpine Way
+Denver, CO 80202
+
+BILL TO
+Trailhead Outfitters AP
+100 Corporate Dr, Ste 400
+Denver, CO 80203
+
+ITEMS
+TOTE-BLK-001 | Canvas Tote, Black | 400 | $7.00
+CAP-NVY-022 | Structured Cap, Navy | 250 | $5.00
+MUG-CER-014 | Ceramic Mug, 12oz | 150 | $3.50
+
+PO Total: $5,025.00`
+};
+
+
+document.getElementById('sampleRunBtn').addEventListener('click', () => {
+  pipelineEl.innerHTML = '';
+  statusEl.className = 'status';
+  statusEl.textContent = 'Running sample workflow...';
+  const parsed = precomputedParses[sample.key];
+  renderParsedStage(parsed, sample.sampleText, sample.key);
+});
+
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function handleUploadedPO(file) {
+  if (!apiKey) {
+    statusEl.className = 'status err';
+    statusEl.textContent = 'Add an API key above to parse your own PO — there\'s no precomputed result for a document Claude hasn\'t seen.';
+    return;
+  }
+  pipelineEl.innerHTML = '';
+  statusEl.className = 'status';
+  statusEl.textContent = `Extracting text from ${file.name}...`;
+  try {
+    const buf = await file.arrayBuffer();
+    const rawText = await extractPdfText(buf);
+    statusEl.textContent = 'Asking Claude to parse the extracted text...';
+    const parsed = await parseWithClaude(rawText);
+    statusEl.textContent = `Parsed ${file.name}.`;
+    renderParsedStage(parsed, rawText, null);
+  } catch (err) {
+    statusEl.className = 'status err';
+    statusEl.textContent = 'Error parsing PO: ' + err.message;
+  }
+}
+
+async function parseWithClaude(rawText) {
+  const prompt = `You are extracting structured data from a raw purchase order (PO) document. The text below was extracted from a PDF and may have inconsistent spacing or line breaks — different retailers use different formats and field labels, so infer the correct field even if the label wording varies (e.g. "Ship To" vs "Deliver To vs "Send to").
+
+Return ONLY a JSON object, no other text, no markdown fences, in this exact shape:
+{
+  "retailer": "<company name issuing the PO>",
+  "po_number": "<PO/order number>",
+  "ship_to": "<full ship-to address as one string>",
+  "bill_to": "<full bill-to / invoice-to address as one string>",
+  "billing_email": "<AP/billing contact email>",
+  "ship_date": "<YYYY-MM-DD>",
+  "requested_delivery_date": "<YYYY-MM-DD>",
+  "payment_terms": "<e.g. Net 30>",
+  "line_items": [{"sku": "<code>", "description": "<string, empty if not present>", "qty": <number>, "unit_price": <number>}]
+}
+
+RAW PO TEXT:
+${rawText}`;
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true"
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 1500,
+      messages: [{ role: "user", content: prompt }]
+    })
+  });
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`API error ${response.status}: ${errText.slice(0, 200)}`);
+  }
+  const data = await response.json();
+  const textBlock = data.content.find(b => b.type === 'text');
+  const cleaned = (textBlock ? textBlock.text : '{}').replace(/```json|```/g, '').trim();
+  return JSON.parse(cleaned);
+}
+
+function computeTotal(parsed) {
+  return parsed.line_items.reduce((sum, li) => sum + li.qty * li.unit_price, 0);
+}
+
+function termDays(terms) {
+  const m = String(terms).match(/(\d+)/);
+  return m ? parseInt(m[1], 10) : 30;
+}
+
+function addDays(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+// ---------------------------------------------------------------------------
+// Pipeline stages
+// ---------------------------------------------------------------------------
+function renderParsedStage(parsed, rawText, sampleKey) {
+  const total = computeTotal(parsed);
+  const card = document.createElement('div');
+  card.className = 'stage-card';
+  card.innerHTML = `
+    <div class="stage-label">Stage 1 — Parsed purchase order</div>
+    <h3>${escapeHtml(parsed.retailer)} — PO ${escapeHtml(parsed.po_number)}</h3>
+    <div class="field-grid">
+      <div class="f"><b>Ship To</b>${escapeHtml(parsed.ship_to)}</div>
+      <div class="f"><b>Bill To</b>${escapeHtml(parsed.bill_to)}</div>
+      <div class="f"><b>Billing Email</b>${escapeHtml(parsed.billing_email)}</div>
+      <div class="f"><b>Payment Terms</b>${escapeHtml(parsed.payment_terms)}</div>
+      <div class="f"><b>Ship Date</b>${escapeHtml(parsed.ship_date)}</div>
+      <div class="f"><b>Requested Delivery</b>${escapeHtml(parsed.requested_delivery_date)}</div>
+    </div>
+    <table class="mini">
+      <thead><tr><th>SKU</th><th>Description</th><th>Qty</th><th>Unit Price</th><th>Ext. Price</th></tr></thead>
+      <tbody>
+        ${parsed.line_items.map(li => `
+          <tr>
+            <td>${escapeHtml(li.sku)}</td>
+            <td>${escapeHtml(li.description || '—')}</td>
+            <td class="num">${li.qty}</td>
+            <td class="num">${fmtMoney(li.unit_price)}</td>
+            <td class="num">${fmtMoney(li.qty * li.unit_price)}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    <p class="hint" style="text-align:right;font-weight:600;color:var(--ink);margin-top:8px;">Order total: ${fmtMoney(total)}</p>
+    <details class="raw-text">
+      <summary>View raw extracted text</summary>
+      <pre>${escapeHtml(rawText)}</pre>
+    </details>
+    <div class="row">
+      
+    </div>
+  `;
+  pipelineEl.appendChild(card);
+  statusEl.textContent = '1 of 6 — Purchase order parsed ✓';
+  setTimeout(() => {
+    statusEl.textContent = '2 of 6 — Creating Shopify order...';
+    renderShopifyStage(parsed, total, sampleKey);
+  }, 900);
+}
+
+function renderShopifyStage(parsed, total, sampleKey) {
+  const orderNo = '#' + Math.floor(10000 + Math.random() * 89999);
+  const card = document.createElement('div');
+  card.className = 'stage-card';
+  card.innerHTML = `
+    <div class="stage-label">Stage 2 — Order created in Shopify</div>
+    <h3>Shopify Order ${orderNo}</h3>
+    <div class="confirm-box"><b>✓ Order created</b> — ${escapeHtml(parsed.line_items.length)} line item(s), ${fmtMoney(total)} total, linked to PO ${escapeHtml(parsed.po_number)}.</div>
+  `;
+  pipelineEl.appendChild(card);
+  statusEl.textContent = '2 of 6 — Shopify order created ✓';
+  setTimeout(() => {
+    statusEl.textContent = '3 of 6 — Marking order fulfilled...';
+    renderFulfillStage(parsed, total, orderNo, sampleKey);
+  }, 900);
+}
+
+function renderFulfillStage(parsed, total, orderNo, sampleKey) {
+  const card = document.createElement('div');
+  card.className = 'stage-card';
+  card.innerHTML = `
+    <div class="stage-label">Stage 3 — Fulfillment</div>
+    <h3>Order ${orderNo} marked fulfilled</h3>
+    <div class="confirm-box"><b>✓ Fulfilled</b> — this status change is what triggers QuickBooks to generate an invoice draft below, for review before it's sent.</div>
+  `;
+  pipelineEl.appendChild(card);
+  statusEl.textContent = '3 of 6 — Fulfillment complete ✓';
+  setTimeout(() => {
+    statusEl.textContent = '4 of 6 — Generating QuickBooks invoice...';
+    renderInvoiceDraftStage(parsed, total, orderNo, sampleKey);
+  }, 900);
+}
+
+function renderInvoiceDraftStage(parsed, total, orderNo, sampleKey) {
+  const invoiceNo = 'INV-' + parsed.po_number.replace(/[^A-Za-z0-9]/g, '');
+  const dueDate = addDays(parsed.ship_date, termDays(parsed.payment_terms));
+  const card = document.createElement('div');
+  card.className = 'stage-card';
+  card.innerHTML = `
+    <div class="stage-label">Stage 4 — QuickBooks invoice draft (pending review)</div>
+    <h3>Invoice ${invoiceNo}</h3>
+    <div class="field-grid">
+      <div class="f"><b>Bill To</b>${escapeHtml(parsed.bill_to)}</div>
+      <div class="f"><b>Billing Email</b>${escapeHtml(parsed.billing_email)}</div>
+      <div class="f"><b>Terms</b>${escapeHtml(parsed.payment_terms)}</div>
+      <div class="f"><b>Due Date</b>${escapeHtml(dueDate)}</div>
+    </div>
+    <table class="mini">
+      <thead><tr><th>SKU</th><th>Description</th><th>Qty</th><th>Unit Price</th><th>Ext. Price</th></tr></thead>
+      <tbody>
+        ${parsed.line_items.map(li => `
+          <tr>
+            <td>${escapeHtml(li.sku)}</td>
+            <td>${escapeHtml(li.description || '—')}</td>
+            <td class="num">${li.qty}</td>
+            <td class="num">${fmtMoney(li.unit_price)}</td>
+            <td class="num">${fmtMoney(li.qty * li.unit_price)}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    <p class="hint" style="text-align:right;font-weight:600;color:var(--ink);margin-top:8px;">Invoice total: ${fmtMoney(total)}</p>
+  `;
+  pipelineEl.appendChild(card);
+  statusEl.textContent = '4 of 6 — Invoice generated ✓';
+  setTimeout(() => {
+    statusEl.textContent = '5 of 6 — Preparing customer communication...';
+    renderApprovedStage(parsed, total, invoiceNo, dueDate, sampleKey);
+  }, 900);
+}
+
+async function renderApprovedStage(parsed, total, invoiceNo, dueDate, sampleKey) {
+  statusEl.className = 'status';
+  statusEl.textContent = 'Drafting the customer invoice email...';
+
+  let emailBody;
+  if (apiKey) {
+    try {
+      emailBody = await draftInvoiceEmail(parsed, total, invoiceNo);
+    } catch (err) {
+      emailBody = `Hi ${parsed.retailer} team,\n\nAttached is invoice ${invoiceNo} for PO ${parsed.po_number}. Total due: ${fmtMoney(total)}, payable under ${parsed.payment_terms} terms.\n\nBest,\nKatherine`;
+    }
+  } else {
+    emailBody = precomputedEmails[sampleKey] || `Hi ${parsed.retailer} team,\n\nAttached is invoice ${invoiceNo} for PO ${parsed.po_number}. Total due: ${fmtMoney(total)}, payable under ${parsed.payment_terms} terms.\n\nBest,\nKatherine`;
+  }
+  const subject = `Invoice ${invoiceNo} — PO ${parsed.po_number} — ${parsed.retailer}`;
+
+  const card = document.createElement('div');
+  card.className = 'stage-card';
+  card.innerHTML = `
+    <div class="stage-label">Stage 5 — Approved & ready to send</div>
+    <h3>Invoice email</h3>
+    <div class="email-box">
+      <div class="subj">${escapeHtml(subject)}</div>
+      <div class="body-text">${escapeHtml(emailBody)}</div>
+    </div>
+  `;
+  pipelineEl.appendChild(card);
+  statusEl.textContent = '5 of 6 — Customer communication prepared ✓';
+
+  setTimeout(() => {
+    renderArStage(parsed, total, invoiceNo, dueDate);
+    statusEl.textContent = 'Sample workflow complete ✓';
+    statusEl.className = 'status success';
+    processedCount++;
+    processedCountEl.textContent = processedCount;
+  }, 1100);
+}
+
+function renderArStage(parsed, total, invoiceNo, dueDate) {
+  const card = document.createElement('div');
+  card.className = 'stage-card';
+  card.innerHTML = `
+    <div class="stage-label">Stage 6 — Accounts receivable tracking</div>
+    <h3>Invoice ${escapeHtml(invoiceNo)} added to AR</h3>
+    <div class="field-grid">
+      <div class="f"><b>Customer</b>${escapeHtml(parsed.retailer)}</div>
+      <div class="f"><b>Invoice</b>${escapeHtml(invoiceNo)}</div>
+      <div class="f"><b>Amount Due</b>${fmtMoney(total)}</div>
+      <div class="f"><b>Payment Terms</b>${escapeHtml(parsed.payment_terms)}</div>
+      <div class="f"><b>Due Date</b>${escapeHtml(dueDate)}</div>
+      <div class="f"><b>Status</b><span class="badge outstanding">Outstanding</span></div>
+    </div>
+    <div class="confirm-box"><b>✓ AR tracking started</b> — the invoice is now visible in the accounts receivable workflow for follow-up through payment.</div>
+  `;
+  pipelineEl.appendChild(card);
+}
+
+async function draftInvoiceEmail(parsed, total, invoiceNo) {
+  const prompt = `Draft a short, professional invoice email to a wholesale customer whose order has just shipped.
+
+Customer: ${parsed.retailer}
+Invoice #: ${invoiceNo}
+PO #: ${parsed.po_number}
+Amount due: ${fmtMoney(total)}
+Payment terms: ${parsed.payment_terms}
+
+Sign the email as Katherine. Return ONLY the email body text, no subject line, no markdown, no preamble.`;
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true"
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 500,
+      messages: [{ role: "user", content: prompt }]
+    })
+  });
+  if (!response.ok) throw new Error('API error');
+  const data = await response.json();
+  const textBlock = data.content.find(b => b.type === 'text');
+  return (textBlock ? textBlock.text : '').trim();
+}
+
+function buildInvoicePdf(parsed, total, invoiceNo, dueDate) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text('Invoice', 14, 20);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.text(`Invoice #: ${invoiceNo}`, 14, 30);
+  doc.text(`PO #: ${parsed.po_number}`, 14, 37);
+  doc.text(`Bill To: ${parsed.bill_to}`, 14, 44);
+  doc.text(`Terms: ${parsed.payment_terms}    Due: ${dueDate}`, 14, 51);
+
+  let y = 65;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('SKU', 14, y);
+  doc.text('Description', 54, y);
+  doc.text('Qty', 120, y);
+  doc.text('Unit Price', 144, y);
+  doc.text('Ext. Price', 172, y);
+  y += 3;
+  doc.line(14, y, 196, y);
+  y += 6;
+  doc.setFont('helvetica', 'normal');
+  parsed.line_items.forEach(li => {
+    if (y > 275) { doc.addPage(); y = 20; }
+    doc.text(String(li.sku).slice(0, 20), 14, y);
+    doc.text(String(li.description || '').slice(0, 26), 54, y);
+    doc.text(String(li.qty), 120, y);
+    doc.text(fmtMoney(li.unit_price), 144, y);
+    doc.text(fmtMoney(li.qty * li.unit_price), 172, y);
+    y += 7;
+  });
+  y += 4;
+  doc.line(14, y, 196, y);
+  y += 8;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.text(`Total Due: ${fmtMoney(total)}`, 14, y);
+  return doc;
+}
+
+// ---------------------------------------------------------------------------
+// AR dashboard — sample data
+// ---------------------------------------------------------------------------
+const arData = [
+  { customer: 'Trailhead Outfitters', po: 'TH-88214', amount: 4575.00, status: 'Paid', daysOverdue: 0, reminders: 0 },
+  { customer: 'Trailhead Outfitters', po: 'TH-87990', amount: 3120.00, status: 'Outstanding', daysOverdue: 12, reminders: 0 },
+  { customer: 'Trailhead Outfitters', po: 'TH-88050', amount: 2240.00, status: 'Overdue', daysOverdue: 22, reminders: 1 },
+  { customer: 'Campus Book Co.', po: 'CBC-2026-0451', amount: 9175.00, status: 'Outstanding', daysOverdue: 5, reminders: 0 },
+  { customer: 'Campus Book Co.', po: 'CBC-2026-0398', amount: 6430.00, status: 'Overdue', daysOverdue: 34, reminders: 2 },
+  { customer: 'Campus Book Co.', po: 'CBC-2026-0410', amount: 4900.00, status: 'Paid', daysOverdue: 0, reminders: 0 },
+  { customer: 'Journey Retail Group', po: 'JRG-77302', amount: 3470.00, status: 'Paid', daysOverdue: 0, reminders: 0 },
+  { customer: 'Journey Retail Group', po: 'JRG-76890', amount: 5890.00, status: 'Overdue', daysOverdue: 61, reminders: 3 },
+  { customer: 'Journey Retail Group', po: 'JRG-77105', amount: 2650.00, status: 'Outstanding', daysOverdue: 3, reminders: 0 },
+  { customer: 'Wayfarer Mercantile', po: 'WM-1187', amount: 3020.00, status: 'Outstanding', daysOverdue: 8, reminders: 0 },
+  { customer: 'Wayfarer Mercantile', po: 'WM-1122', amount: 1860.00, status: 'Paid', daysOverdue: 0, reminders: 0 },
+  { customer: 'Wayfarer Mercantile', po: 'WM-1150', amount: 2410.00, status: 'Overdue', daysOverdue: 45, reminders: 2 }
+];
+
+function renderArTable() {
+  const table = document.getElementById('arTable');
+  table.innerHTML = `
+    <thead>
+      <tr><th>Customer</th><th>PO Number</th><th>Amount</th><th>Status</th><th>Days Overdue</th><th>Reminders Sent</th></tr>
+    </thead>
+    <tbody>
+      ${arData.map(r => {
+        const statusClass = r.status.toLowerCase();
+        const reminderBadge = r.reminders > 0
+          ? `<span class="badge reminded">${r.reminders} sent</span>`
+          : `<span class="hint" style="margin:0;">None</span>`;
+        return `
+          <tr>
+            <td>${escapeHtml(r.customer)}</td>
+            <td>${escapeHtml(r.po)}</td>
+            <td class="num">${fmtMoney(r.amount)}</td>
+            <td><span class="badge ${statusClass}">${escapeHtml(r.status)}</span></td>
+            <td class="num">${r.daysOverdue > 0 ? r.daysOverdue : '—'}</td>
+            <td>${reminderBadge}</td>
+          </tr>`;
+      }).join('')}
+    </tbody>
+  `;
+}
+renderArTable();
+</script>
+</body>
+</html>
